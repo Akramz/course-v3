@@ -118,7 +118,7 @@ class TokenizeProcessor(Processor):
         toks = parallel(self.proc_chunk, chunks, max_workers=self.max_workers)
         return sum(toks, [])
 
-    def proc1(self, item): return self.proc_chunk([toks])[0]
+    def proc1(self, item): return self.proc_chunk([item])[0]
 
     def deprocess(self, toks): return [self.deproc1(tok) for tok in toks]
     def deproc1(self, tok):    return " ".join(tok)
@@ -147,7 +147,7 @@ class NumericalizeProcessor(Processor):
         return [self.deproc1(idx) for idx in idxs]
     def deproc1(self, idx): return [self.vocab[i] for i in idx]
 
-class LM_PreLoader():
+class LM_Dataset():
     def __init__(self, data, bs=64, bptt=70, shuffle=False):
         self.data,self.bs,self.bptt,self.shuffle = data,bs,bptt,shuffle
         total_len = sum([len(t) for t in data.x])
@@ -168,8 +168,8 @@ class LM_PreLoader():
         self.batched_data = stream[:self.n_batch * self.bs].view(self.bs, self.n_batch)
 
 def get_lm_dls(train_ds, valid_ds, bs, bptt, **kwargs):
-    return (DataLoader(LM_PreLoader(train_ds, bs, bptt, shuffle=True), batch_size=bs, **kwargs),
-            DataLoader(LM_PreLoader(valid_ds, bs, bptt, shuffle=False), batch_size=2*bs, **kwargs))
+    return (DataLoader(LM_Dataset(train_ds, bs, bptt, shuffle=True), batch_size=bs, **kwargs),
+            DataLoader(LM_Dataset(valid_ds, bs, bptt, shuffle=False), batch_size=2*bs, **kwargs))
 
 def lm_databunchify(sd, bs, bptt, **kwargs):
     return DataBunch(*get_lm_dls(sd.train, sd.valid, bs, bptt, **kwargs))
